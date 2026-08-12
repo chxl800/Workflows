@@ -1,0 +1,265 @@
+@{
+    ViewBag.Title = "审批详情";
+}
+
+<div class="content-card" style="padding: 20px;">
+
+    <button type="button" class="layui-btn layui-btn-primary" id="btnUp" style="float:right">
+        <i class="layui-icon layui-icon-return"></i> 返回
+    </button>
+
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>审批详情</legend>
+    </fieldset>
+
+    <div id="detailPanel" style="display: none;">
+        <!-- 基本信息（仅保留：任务编码、业务单号、发起人、发起备注） -->
+        <fieldset class="layui-elem-field" style="margin-bottom: 15px;">
+            <legend>流程基本信息</legend>
+            <div class="layui-field-box">
+                <table class="layui-table" lay-skin="nob" style="margin: 0;">
+                    <colgroup><col width="120"><col><col width="120"><col></colgroup>
+                    <tbody>
+                        <tr>
+                            <td style="color:#999;">业务单号</td>
+                            <td><b id="bizNo"></b></td>
+                            <td style="color:#999;">任务编码</td>
+                            <td id="taskCode" style="font-size:12px;color:#666;"></td>
+                        </tr>
+                        <tr>
+                            <td style="color:#999;">发起人</td>
+                            <td><b id="applyUser"></b></td>
+                            <td style="color:#999;">发起备注</td>
+                            <td id="applyRemark"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </fieldset>
+
+        <!-- 业务单信息（iframe 加载 FormPageUrl） -->
+        <fieldset class="layui-elem-field" style="margin-bottom: 15px;" id="bizFormPanel">
+            <legend>业务单信息</legend>
+            <div class="layui-field-box" style="padding: 0;">
+                <iframe id="bizFormFrame" style="width: 100%; height: 400px; border: none;"></iframe>
+            </div>
+        </fieldset>
+
+        <!-- 历史轨迹 -->
+        <fieldset class="layui-elem-field" style="margin-bottom: 15px;">
+            <legend>审批轨迹</legend>
+            <div class="layui-field-box">
+                <ul class="layui-timeline" id="historyList" style="padding: 15px 0;"></ul>
+            </div>
+        </fieldset>
+
+        <!-- 审批区域（仅待审批的当前用户显示） -->
+        <fieldset class="layui-elem-field layui-field-title" id="auditPanel">
+            <legend>审批操作</legend>
+            <div class="layui-field-box">
+                <form class="layui-form" style="max-width: 700px;">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">审批意见</label>
+                        <div class="layui-input-block">
+                            <textarea id="auditOpinion" class="layui-textarea" placeholder="请填写审批意见" style="height: 100px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">表单数据</label>
+                        <div class="layui-input-block">
+                            <textarea id="formDataJson" class="layui-textarea" placeholder="可选：业务表单数据JSON，用于条件分支评估，如 {&quot;Amount&quot;:&quot;5000&quot;}" style="height: 80px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button type="button" class="layui-btn" id="btnPass">
+                                <i class="layui-icon layui-icon-ok"></i> 审批通过
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-danger" id="btnReject">
+                                <i class="layui-icon layui-icon-close"></i> 审批驳回
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="btnBack">
+                                <i class="layui-icon layui-icon-return"></i> 返回列表
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+<script type="text/html" id="operTypeTpl">
+    {{# if(d.OperateType === 0){ }}<span class="layui-badge layui-bg-blue">发起提交</span>{{# } }}
+    {{# else if(d.OperateType === 1){ }}<span class="layui-badge layui-bg-green">审批通过</span>{{# } }}
+    {{# else if(d.OperateType === 2){ }}<span class="layui-badge layui-bg-red">审批驳回</span>{{# } }}
+    {{# else if(d.OperateType === 3){ }}<span class="layui-badge">撤回</span>{{# } }}
+    {{# else if(d.OperateType === 4){ }}<span class="layui-badge">作废</span>{{# } }}
+    {{# else if(d.OperateType === 5){ }}<span class="layui-badge layui-bg-cyan">转办</span>{{# } }}
+    {{# else if(d.OperateType === 6){ }}<span class="layui-badge layui-bg-orange">加签</span>{{# } }}
+    {{# else if(d.OperateType === 7){ }}<span class="layui-badge layui-bg-gray">超时自动处理</span>{{# } }}
+</script>
+
+@section scripts {
+    <script>
+        layui.use(['layer', 'laytpl'], function () {
+            var layer = layui.layer;
+            var laytpl = layui.laytpl;
+            var $ = layui.$;
+
+            $("#btnUp").click(function () {
+                // 返回上一页
+                history.back();
+            })
+
+            var taskCode = '@(ViewBag.TaskCode ?? "")';
+            var detailData = null;
+
+            // 格式化 /Date(xxx)/ 时间
+            function fmtTime(s) {
+                if (!s) return '';
+                if (typeof s === 'string' && s.indexOf('/Date(') >= 0) {
+                    var m = s.match(/\/Date\((\d+)\)\//);
+                    if (m) {
+                        var dt = new Date(parseInt(m[1]));
+                        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+                        return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate()) + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes()) + ':' + p(dt.getSeconds());
+                    }
+                }
+                return s;
+            }
+
+            // 任务状态文字
+            function fmtTaskStatus(s) {
+                var map = { 0: '待审批', 1: '通过', 2: '驳回', 3: '撤回', 4: '作废', 5: '转办转出', 6: '加签任务' };
+                return map[s] || ('未知(' + s + ')');
+            }
+
+            // 操作类型文字
+            function fmtOperType(s) {
+                var map = { 0: '发起提交', 1: '审批通过', 2: '审批驳回', 3: '撤回', 4: '作废', 5: '转办', 6: '加签', 7: '超时自动处理' };
+                return map[s] || ('未知(' + s + ')');
+            }
+
+            // 节点映射
+            function getNodeName(code) {
+                if (!detailData) return code || '(发起)';
+                if (detailData.node && detailData.node.NodeCode === code) return detailData.node.NodeName;
+                return code || '(发起)';
+            }
+
+            // 加载详情
+            function loadDetail() {
+                $.ajax({
+                    url: '/FlowRunTask/GetDetail',
+                    type: 'GET',
+                    data: { taskCode: taskCode },
+                    success: function (res) {
+                        if (res.Code !== 200) {
+                            layer.msg(res.Message || '加载失败', { icon: 2 });
+                            return;
+                        }
+                        detailData = res.Data;
+                        var t = detailData.task;
+                        var i = detailData.instance;
+                        var tp = detailData.template;
+
+                        // 基本信息（仅4个字段）
+                        $('#taskCode').text(t.TaskCode);
+                        $('#bizNo').text(i.BizOrderNo);
+                        $('#applyUser').text((i.ApplyUserName || '') + '(' + i.ApplyUserNo + ')');
+                        $('#applyRemark').text(i.ApplyRemark || '');
+
+                        // 业务单信息：iframe 加载 FormPageUrl，拼接业务单号参数
+                        var formUrl = i.FormPageUrl || '';
+                        if (formUrl) {
+                            var sep = formUrl.indexOf('?') >= 0 ? '&' : '?';
+                            $('#bizFormFrame').attr('src', formUrl + sep + 'bizOrderNo=' + encodeURIComponent(i.BizOrderNo));
+                        } else {
+                            $('#bizFormPanel').find('.layui-field-box').html(
+                                '<div style="padding: 20px; text-align: center; color: #999;">该流程未配置业务表单页面（FormPageUrl）</div>');
+                        }
+
+                        // 仅待审批 且 当前用户是审批人 才显示操作区
+                        var canAudit = (t.TaskStatus === 0) && (t.AuditUserNo === detailData.currentUser);
+                        if (!canAudit) {
+                            $('#auditPanel').hide();
+                        }
+
+                        // 历史轨迹
+                        var hlist = detailData.history || [];
+                        var html = '';
+                        for (var idx = 0; idx < hlist.length; idx++) {
+                            var h = hlist[idx];
+                            var timeStr = fmtTime(h.OperateTime);
+                            var nodeFrom = getNodeName(h.FromNodeCode);
+                            var nodeTo = h.ToNodeCode ? getNodeName(h.ToNodeCode) : '(结束)';
+                            var operTpl = ''; //laytpl($('#operTypeTpl').html()).render(h);
+                            html += '<li class="layui-timeline-item">'
+                                + '<i class="layui-icon layui-timeline-axis">&#xe63f;</i>'
+                                + '<div class="layui-timeline-content layui-text">'
+                                + '<h3 class="layui-timeline-title">'
+                                + operTpl + ' <span style="font-size:12px;color:#999;margin-left:8px;">' + timeStr + '</span>'
+                                + '</h3>'
+                                + '<p><b>' + (h.OperateUserName || h.OperateUserNo) + '</b>'
+                                + ' ' + fmtOperType(h.OperateType)
+                                + (nodeFrom ? '  <i class="layui-icon">&#xe65b;</i> 来自【' + nodeFrom + '】' : '')
+                                + (h.ToNodeCode ? '  <i class="layui-icon">&#xe602;</i> 流转至【' + nodeTo + '】' : '')
+                                + '</p>'
+                                + (h.Opinion ? '<p style="color:#666;margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:4px;">意见：' + h.Opinion + '</p>' : '')
+                                + '</div></li>';
+                        }
+                        $('#historyList').html(html);
+                        $('#detailPanel').show();
+                    },
+                    error: function () {
+                        layer.msg('请求失败', { icon: 2 });
+                    }
+                });
+            }
+
+            // 审批
+            function doApproval(operType) {
+                var opinion = $('#auditOpinion').val();
+                var fd = $('#formDataJson').val();
+                if (operType === 2 && !$.trim(opinion)) {
+                    layer.msg('驳回必须填写意见', { icon: 2 });
+                    return;
+                }
+                layer.confirm(operType === 1 ? '确定审批通过？' : '确定审批驳回？', function (idx) {
+                    layer.close(idx);
+                    var loadIdx = layer.load(2);
+                    $.ajax({
+                        url: '/FlowRunTask/Approval',
+                        type: 'POST',
+                        data: { taskCode: taskCode, operType: operType, opinion: opinion, formDataJson: fd },
+                        success: function (res) {
+                            layer.close(loadIdx);
+                            if (res.Code === 200) {
+                                layer.msg(res.Message, { icon: 1, time: 1800 }, function () {
+                                    location.href = '/FlowRunTask/Index';
+                                });
+                            } else {
+                                layer.msg(res.Message || '审批失败', { icon: 2 });
+                            }
+                        },
+                        error: function () {
+                            layer.close(loadIdx);
+                            layer.msg('请求失败', { icon: 2 });
+                        }
+                    });
+                });
+            }
+
+            $('#btnPass').on('click', function () { doApproval(1); });
+            $('#btnReject').on('click', function () { doApproval(2); });
+            $('#btnBack').on('click', function () { location.href = '/FlowRunTask/Index'; });
+
+            if (!taskCode) {
+                layer.msg('任务编码缺失', { icon: 2 });
+            } else {
+                loadDetail();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,90 @@
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<!-- 欢迎区域 -->
+<div class="content-card" style="margin-bottom: 20px;">
+    <h1 class="layui-font-32" id="title">
+        <i class="layui-icon layui-icon-engine" style="color: #1E9FFF;"></i> 
+        ASP.NET
+    </h1>
+    <p class="layui-font-18" style="color: #666; line-height: 1.8;">
+        ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.
+    </p>
+    <a href="https://asp.net" class="layui-btn layui-btn-lg layui-btn-normal" target="_blank">
+        <i class="layui-icon layui-icon-website"></i> Learn more
+    </a>
+</div>
+
+<!-- 功能卡片区域 -->
+<div class="layui-row layui-col-space20">
+    <!-- 卡片1 -->
+    <div class="layui-col-md4">
+        <div class="content-card" style="height: 100%;">
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>
+                    <i class="layui-icon layui-icon-start" style="color: #16b777;"></i>
+                    <span id="gettingStartedTitle">Getting started</span>
+                </legend>
+            </fieldset>
+            <p style="line-height: 1.8; color: #555;">
+                ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
+                enables a clean separation of concerns and gives you full control over markup
+                for enjoyable, agile development.
+            </p>
+            <a class="layui-btn layui-btn-primary" href="https://go.microsoft.com/fwlink/?LinkId=301865" target="_blank">
+                Learn more <i class="layui-icon layui-icon-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- 卡片2 -->
+    <div class="layui-col-md4">
+        <div class="content-card" style="height: 100%;">
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>
+                    <i class="layui-icon layui-icon-auz" style="color: #FFB800;"></i>
+                    <span id="librariesTitle">Get more libraries</span>
+                </legend>
+            </fieldset>
+            <p style="line-height: 1.8; color: #555;">
+                NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.
+            </p>
+            <a class="layui-btn layui-btn-primary" href="https://go.microsoft.com/fwlink/?LinkId=301866" target="_blank">
+                Learn more <i class="layui-icon layui-icon-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- 卡片3：待办事项快捷入口 -->
+    <div class="layui-col-md4">
+        <div class="content-card" style="height: 100%;">
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>
+                    <i class="layui-icon layui-icon-username" style="color: #FF5722;"></i>
+                    待办事项
+                </legend>
+            </fieldset>
+            <p style="line-height: 1.8; color: #555;">
+                查看您的待审批任务与已办记录，点击进入审批详情进行通过或驳回操作。
+            </p>
+            <a class="layui-btn layui-btn-normal" href="@Url.Action("Index", "FlowRunTask")">
+                <i class="layui-icon layui-icon-next"></i> 进入待办列表
+            </a>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        layui.use(['element', 'layer'], function() {
+            var layer = layui.layer;
+            
+            // 欢迎提示
+            layer.msg('欢迎使用 ASP.NET + Layui 系统！', {
+                icon: 1,
+                time: 3000
+            });
+        });
+    </script>
+}

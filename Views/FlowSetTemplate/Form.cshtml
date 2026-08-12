@@ -1,0 +1,131 @@
+@{
+    ViewBag.Title = ViewBag.Id != null ? "编辑流程类型" : "新建流程类型";
+}
+
+<div class="content-card" style="padding: 20px;">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>@(ViewBag.Id != null ? "编辑流程类型" : "新建流程类型")</legend>
+    </fieldset>
+
+    <form class="layui-form" lay-filter="templateForm">
+        <input type="hidden" name="Id" value="@(ViewBag.Id ?? 0)" />
+        <div class="layui-form-item">
+            <label class="layui-form-label">流程名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="TemplateName" required lay-verify="required" placeholder="请输入流程名称" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">业务表名</label>
+            <div class="layui-input-block">
+                <input type="text" name="BizTableName" required lay-verify="required" placeholder="请输入关联业务主表名" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">业务单号字段</label>
+            <div class="layui-input-block">
+                <input type="text" name="BizOrderField" required lay-verify="required" placeholder="请输入业务单据单号字段名" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">表单页面Url</label>
+            <div class="layui-input-block">
+                <input type="text" name="FormPageUrl" placeholder="请输入表单页面Url" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">是否启用</label>
+            <div class="layui-input-block">
+                <select name="IsEnable" lay-verify="required">
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">允许撤回</label>
+            <div class="layui-input-block">
+                <select name="AllowWithdraw" lay-verify="required">
+                    <option value="1">允许</option>
+                    <option value="0">不允许</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+                <textarea name="Remark" placeholder="请输入备注说明" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn" lay-submit lay-filter="submitBtn">保存</button>
+                <a href="/FlowSetTemplate/Index" class="layui-btn layui-btn-primary">返回</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section scripts {
+    <script>
+        layui.use(['form', 'layer'], function () {
+            var form = layui.form;
+            var layer = layui.layer;
+            var $ = layui.$;
+
+            var editId = $('input[name="Id"]').val();
+
+            // 如果是编辑，加载数据填充表单
+            if (editId && editId !== '0') {
+                $.ajax({
+                    url: '/FlowSetTemplate/GetTemplate',
+                    type: 'GET',
+                    data: { id: editId },
+                    dataType: 'json',
+                    success: function (res) {
+                        console.log(res)
+                        if (res.Code === 200 && res.Data) {
+                            var d = res.Data;
+                            $('input[name="TemplateName"]').val(d.TemplateName);
+                            $('input[name="BizTableName"]').val(d.BizTableName);
+                            $('input[name="BizOrderField"]').val(d.BizOrderField);
+                            $('input[name="FormPageUrl"]').val(d.FormPageUrl);
+                            $('textarea[name="Remark"]').val(d.Remark);
+                            $('select[name="IsEnable"]').val(d.IsEnable);
+                            $('select[name="AllowWithdraw"]').val(d.AllowWithdraw);
+                            form.render('select');
+                        } else {
+                            layer.msg(res.Message || '加载数据失败', { icon: 2 });
+                        }
+                    },
+                    error: function () {
+                        layer.msg('请求失败', { icon: 2 });
+                    }
+                });
+            }
+
+            // AJAX 提交表单
+            form.on('submit(submitBtn)', function (data) {
+                $.ajax({
+                    url: '/FlowSetTemplate/Save',
+                    type: 'POST',
+                    data: data.field,
+                    dataType: 'json',
+                    success: function (res) {
+                        if (res.Code === 200) {
+                            layer.msg(res.Message, { icon: 1, time: 1500 }, function () {
+                                location.href = '/FlowSetTemplate/Index';
+                            });
+                        } else {
+                            layer.msg(res.Message, { icon: 2 });
+                        }
+                    },
+                    error: function () {
+                        layer.msg('请求失败', { icon: 2 });
+                    }
+                });
+                return false; // 阻止默认表单提交
+            });
+        });
+    </script>
+}

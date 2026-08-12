@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width" />
+    <title>错误 - 系统提示</title>
+    
+    <!-- Layui CSS (CDN方式) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/css/layui.css">
+    
+    <style>
+        body {
+            background-color: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        .error-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .error-icon {
+            font-size: 80px;
+            color: #FF5722;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <i class="layui-icon layui-icon-close error-icon"></i>
+        <h1 class="error-title">出错了！</h1>
+        <h2 class="error-message">处理你的请求时出错，请稍后重试。</h2>
+        <a href="@Url.Action("Index", "Home")" class="layui-btn layui-btn-lg layui-btn-normal">
+            <i class="layui-icon layui-icon-home"></i> 返回首页
+        </a>
+    </div>
+    
+    <!-- Layui JS (CDN方式) -->
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/layui.js"></script>
+    <script>
+        layui.use('layer', function() {
+            var layer = layui.layer;
+            
+            layer.msg('页面加载异常', {
+                icon: 2,
+                time: 2000
+            });
+        });
+    </script>
+</body>
+</html>

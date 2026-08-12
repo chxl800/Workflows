@@ -1,0 +1,180 @@
+﻿/* Layui 布局增强样式 */
+
+/* 页面背景 */
+body {
+    background-color: #f2f2f2;
+}
+
+/* 主内容区域样式 */
+.body-content {
+    padding: 20px;
+    min-height: calc(100vh - 160px);
+}
+
+/* 内容卡片通用样式 */
+.content-card {
+    background: #fff;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    margin-bottom: 20px;
+}
+
+/* 页脚样式 */
+.footer-text {
+    text-align: center;
+    color: #999;
+    padding: 15px 0;
+    margin-top: 20px;
+}
+
+/* 侧边栏导航样式增强 */
+.layui-nav-tree .layui-nav-child dd.layui-this a {
+    background-color: #1E9FFF !important;
+}
+
+/* 标题区域样式 */
+.layui-font-32 {
+    font-size: 32px !important;
+    line-height: 1.5;
+}
+
+.layui-font-24 {
+    font-size: 24px !important;
+    line-height: 1.5;
+}
+
+.layui-font-20 {
+    font-size: 20px !important;
+    line-height: 1.5;
+}
+
+.layui-font-18 {
+    font-size: 18px !important;
+    line-height: 1.6;
+}
+
+.layui-font-16 {
+    font-size: 16px !important;
+    line-height: 1.6;
+}
+
+/* 选项卡组件增强样式 */
+.layui-tab-title li {
+    font-size: 14px;
+}
+
+.layui-tab-brief > .layui-tab-title .layui-this {
+    color: #1E9FFF;
+}
+
+.layui-tab-brief > .layui-tab-title .layui-this:after {
+    background-color: #1E9FFF;
+}
+
+/* 表单组件增强样式 */
+.layui-form-label {
+    width: 100px;
+}
+
+.layui-input-block {
+    margin-left: 130px;
+}
+
+/* 按钮组样式 */
+.layui-btn + .layui-btn {
+    margin-left: 10px;
+}
+
+/* 时间轴组件样式 */
+.layui-timeline-title {
+    margin-bottom: 8px;
+}
+
+.layui-timeline-axis {
+    color: #1E9FFF;
+}
+
+/* 链接样式 */
+.layui-link {
+    color: #1E9FFF;
+    text-decoration: none;
+}
+
+.layui-link:hover {
+    color: #16b777;
+    text-decoration: underline;
+}
+
+/* 分割线样式 */
+.layui-bg-gray {
+    margin: 20px 0;
+    height: 1px;
+    background-color: #e6e6e6;
+    border: none;
+}
+
+/* 响应式适配 */
+@media screen and (max-width: 768px) {
+    .layui-layout-admin .layui-side {
+        width: 60px;
+    }
+    
+    .layui-layout-admin .layui-side-scroll {
+        width: 60px;
+    }
+    
+    .layui-layout-admin .layui-body {
+        left: 60px;
+    }
+    
+    .layui-side-scroll .layui-nav-tree .layui-nav-item a cite {
+        display: none;
+    }
+    
+    .body-content {
+        padding: 15px;
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 动画效果 */
+.content-card {
+    transition: box-shadow 0.3s ease;
+}
+
+.content-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+.layui-btn {
+    transition: all 0.3s ease;
+}
+
+.layui-btn:hover {
+    opacity: 0.9;
+}
+
+/* 导航栏激活状态 */
+.layui-nav-tree .layui-nav-itemed > a {
+    background-color: rgba(30, 159, 255, 0.1) !important;
+}

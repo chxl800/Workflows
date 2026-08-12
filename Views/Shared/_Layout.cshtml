@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - 工作流管理系统</title>
+    
+    <!-- Layui CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/css/layui.css">
+    
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    
+    <style>
+        /* 布局定位修复 */
+        .layui-layout-admin .layui-header {
+            background-color: #23262E;
+            height: 60px;
+            line-height: 60px;
+        }
+        
+        .layui-layout-admin .layui-logo {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 200px;
+            height: 100%;
+            line-height: 60px;
+            background-color: #1E9FFF;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .layui-layout-admin .layui-logo a {
+            color: #fff;
+        }
+        
+        .layui-layout-admin .layui-side {
+            top: 60px;
+            width: 200px;
+            background-color: #2F4056;
+        }
+        
+        .layui-layout-admin .layui-side-scroll {
+            width: 200px;
+        }
+        
+        .layui-layout-admin .layui-body {
+            top: 60px;
+            left: 200px;
+            bottom: 0;
+        }
+        
+        /* 顶部导航右侧 */
+        .layui-nav.layui-layout-right {
+            background-color: transparent;
+        }
+        
+        .layui-nav.layui-layout-right .layui-nav-item a {
+            color: #c2c2c2;
+        }
+        
+        .layui-nav.layui-layout-right .layui-nav-item a:hover {
+            color: #fff;
+        }
+        
+        /* 侧边栏菜单样式 */
+        .layui-side .layui-nav-tree {
+            width: 200px;
+            background-color: #2F4056;
+        }
+        
+        .layui-side .layui-nav-tree .layui-nav-item a {
+            height: 45px;
+            line-height: 45px;
+        }
+        
+        .layui-side .layui-nav-tree .layui-nav-item a i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .layui-side .layui-nav-tree .layui-nav-child a {
+            padding-left: 50px;
+        }
+        
+        /* 菜单高亮样式 - 确保优先级足够覆盖框架默认 */
+        .layui-side .layui-nav-tree .layui-nav-item.layui-this > a,
+        .layui-side .layui-nav-tree .layui-nav-child dd.layui-this > a {
+            background-color: #1E9FFF !important;
+            color: #fff !important;
+        }
+        
+        .layui-side .layui-nav-tree .layui-nav-child dd.layui-this {
+            background-color: #1E9FFF !important;
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+    <div class="layui-layout layui-layout-admin">
+        <!-- 顶部导航 -->
+        <div class="layui-header">
+            <div class="layui-logo">
+                <a href="@Url.Action("Index", "Home")">工作流管理系统</a>
+            </div>
+            <ul class="layui-nav layui-layout-right">
+                <li class="layui-nav-item">
+                    <a href="javascript:;">
+                        <i class="layui-icon layui-icon-user"></i> admin
+                    </a>
+                    <dl class="layui-nav-child">
+                        <dd><a href="javascript:;">基本资料</a></dd>
+                        <dd><a href="javascript:;">账户设置</a></dd>
+                    </dl>
+                </li>
+                <li class="layui-nav-item"><a href="javascript:;">退出</a></li>
+            </ul>
+        </div>
+        
+        <!-- 侧边栏菜单 -->
+        <div class="layui-side">
+            <div class="layui-side-scroll">
+                <ul class="layui-nav layui-nav-tree" lay-filter="admin-side">
+                    <!-- 主页 -->
+                    <li class="layui-nav-item @((ViewContext.RouteData.Values["controller"].ToString() == "Home" && ViewContext.RouteData.Values["action"].ToString() == "Index") ? "layui-this" : "")">
+                        <a href="@Url.Action("Index", "Home")">
+                            <i class="layui-icon layui-icon-home"></i>
+                            <cite>首页</cite>
+                        </a>
+                    </li>
+                    
+                    <!-- 工作流管理 -->
+                    <li class="layui-nav-item @((ViewContext.RouteData.Values["controller"].ToString() == "FlowSetNode" || ViewContext.RouteData.Values["controller"].ToString() == "FlowSetTemplate" || ViewContext.RouteData.Values["controller"].ToString() == "FlowRunTask") ? "layui-nav-itemed" : "")">
+                        <a href="javascript:;">
+                            <i class="layui-icon layui-icon-set"></i>
+                            <cite>工作流管理</cite>
+                        </a>
+                        <dl class="layui-nav-child">
+                            <dd class="@((ViewContext.RouteData.Values["controller"].ToString() == "FlowSetNode" || ViewContext.RouteData.Values["controller"].ToString() == "FlowSetTemplate") ? "layui-this" : "")">
+                                <a href="@Url.Action("Index", "FlowSetTemplate")">
+                                    <i class="layui-icon layui-icon-set" style="margin-right: 4px; font-size: 14px;"></i>
+                                    <cite>流程类型</cite>
+                                </a>
+                            </dd>
+                            <dd class="@(ViewContext.RouteData.Values["controller"].ToString() == "FlowRunTask" ? "layui-this" : "")">
+                                <a href="@Url.Action("Index", "FlowRunTask")">
+                                    <i class="layui-icon layui-icon-username" style="margin-right: 4px; font-size: 14px;"></i>
+                                    <cite>待办事项</cite>
+                                </a>
+                            </dd>
+                        </dl>
+                    </li>
+                    
+                    <!-- 关于 -->
+                    <li class="layui-nav-item @((ViewContext.RouteData.Values["controller"].ToString() == "Home" && ViewContext.RouteData.Values["action"].ToString() == "About") ? "layui-this" : "")">
+                        <a href="@Url.Action("About", "Home")">
+                            <i class="layui-icon layui-icon-about"></i>
+                            <cite>关于</cite>
+                        </a>
+                    </li>
+                    
+                    <!-- 联系方式 -->
+                    <li class="layui-nav-item @((ViewContext.RouteData.Values["controller"].ToString() == "Home" && ViewContext.RouteData.Values["action"].ToString() == "Contact") ? "layui-this" : "")">
+                        <a href="@Url.Action("Contact", "Home")">
+                            <i class="layui-icon layui-icon-console"></i>
+                            <cite>联系方式</cite>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 主体内容 -->
+        <div class="layui-body">
+            <div class="body-content">
+                @RenderBody()
+                <div class="footer-text">
+                    <p>&copy; @DateTime.Now.Year - 工作流管理系统</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Layui JS -->
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.16/dist/layui.js"></script>
+    <script>
+        layui.use(['element', 'layer'], function() {
+            var element = layui.element;
+        });
+    </script>
+    
+    @Scripts.Render("~/bundles/jquery")
+    @RenderSection("scripts", required: false)
+</body>
+</html>

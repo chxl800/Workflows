@@ -1,0 +1,165 @@
+﻿@{
+    ViewBag.Title = "待办事项";
+}
+
+<div class="content-card" style="padding: 20px;">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>待办事项</legend>
+    </fieldset>
+
+    <!-- 选项卡：待办 / 已办 -->
+    <div class="layui-tab" lay-filter="taskTab" id="taskTab" style="margin-bottom: 0;">
+        <ul class="layui-tab-title">
+            <li class="@(ViewBag.Tab == "todo" ? "layui-this" : "")" lay-id="todo">我的待办</li>
+            <li class="@(ViewBag.Tab == "done" ? "layui-this" : "")" lay-id="done">我的已办</li>
+        </ul>
+    </div>
+
+    <!-- 查询区域 -->
+    <div class="layui-form" style="margin: 15px 0;">
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width: 80px;">关键字</label>
+            <div class="layui-input-inline" style="width: 260px;">
+                <input type="text" name="keyword" id="searchKeyword" placeholder="业务单号 / 发起人 / 实例编码" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" id="btnSearch">
+                <i class="layui-icon layui-icon-search"></i> 查询
+            </button>
+            <button type="button" class="layui-btn layui-btn-primary" id="btnReset">重置</button>
+        </div>
+    </div>
+
+    <table id="taskTable" lay-filter="taskTable"></table>
+</div>
+
+<!-- 任务状态列模板 -->
+<script type="text/html" id="taskStatusTpl">
+    {{# if(d.TaskStatus === 0){ }}
+    <span class="layui-badge layui-bg-orange">待审批</span>
+    {{# } else if(d.TaskStatus === 1){ }}
+    <span class="layui-badge layui-bg-green">通过</span>
+    {{# } else if(d.TaskStatus === 2){ }}
+    <span class="layui-badge layui-bg-red">驳回</span>
+    {{# } else if(d.TaskStatus === 3){ }}
+    <span class="layui-badge layui-bg-gray">撤回</span>
+    {{# } else if(d.TaskStatus === 4){ }}
+    <span class="layui-badge layui-bg-gray">作废</span>
+    {{# } else if(d.TaskStatus === 5){ }}
+    <span class="layui-badge layui-bg-cyan">转办</span>
+    {{# } else if(d.TaskStatus === 6){ }}
+    <span class="layui-badge layui-bg-blue">加签</span>
+    {{# } }}
+</script>
+
+<!-- 实例状态列模板 -->
+<script type="text/html" id="instanceStatusTpl">
+    {{# if(d.InstanceStatus === 0){ }}
+    <span class="layui-badge layui-bg-blue">审批中</span>
+    {{# } else if(d.InstanceStatus === 1){ }}
+    <span class="layui-badge layui-bg-green">全部通过</span>
+    {{# } else if(d.InstanceStatus === 2){ }}
+    <span class="layui-badge layui-bg-red">被驳回</span>
+    {{# } else if(d.InstanceStatus === 3){ }}
+    <span class="layui-badge layui-bg-gray">已撤回</span>
+    {{# } else if(d.InstanceStatus === 4){ }}
+    <span class="layui-badge layui-bg-gray">已终止</span>
+    {{# } }}
+</script>
+
+<!-- 业务单号列模板（挂连接到详情页） -->
+<script type="text/html" id="bizOrderTpl">
+    <a class="layui-table-link" lay-event="detail">{{ d.BizOrderNo || '-' }}</a>
+</script>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="operationTpl">
+    {{# if(d.TaskStatus === 0){ }}
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="detail">审批</a>
+    {{# } else { }}
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail">查看</a>
+    {{# } }}
+</script>
+
+@section scripts {
+    <script>
+        layui.use(['table', 'element', 'layer'], function () {
+            var table = layui.table;
+            var element = layui.element;
+            var layer = layui.layer;
+            var $ = layui.$;
+
+            var currentTab = '@(ViewBag.Tab ?? "todo")';
+
+            // 格式化 /Date(xxx)/ 时间为 yyyy-MM-dd HH:mm
+            function fmtTime(s) {
+                if (!s) return '';
+                if (typeof s === 'string' && s.indexOf('/Date(') >= 0) {
+                    var m = s.match(/\/Date\((\d+)\)\//);
+                    if (m) {
+                        var dt = new Date(parseInt(m[1]));
+                        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+                        return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate())
+                            + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes());
+                    }
+                }
+                return s;
+            }
+
+            // 渲染表格
+            function renderTable(tab) {
+                return table.render({
+                    elem: '#taskTable',
+                    url: '/FlowRunTask/GetList',
+                    method: 'get',
+                    where: { tab: tab, keyword: $('#searchKeyword').val() },
+                    page: true,
+                    limit: 10,
+                    limits: [10, 20, 50, 100],
+                    even: true,
+                    text: { none: '暂无' + (tab === 'todo' ? '待办' : '已办') + '任务' },
+                    cols: [[
+                        { type: 'numbers', title: '序号', width: 60, align: 'center' },
+                        { field: 'BizOrderNo', title: '业务单号', width: 220, templet: '#bizOrderTpl' },
+                        { field: 'TaskCode', title: '任务编码', width: 250, },
+                        { field: 'ApplyUserName', title: '发起人', width: 100, align: 'center' },
+                        { field: 'TemplateCode', title: '流程模板', width: 160 },
+                        { field: 'NodeCode', title: '当前节点', width: 120, align: 'center' },
+                        { field: 'TaskStatus', title: '任务状态', width: 90, align: 'center', templet: '#taskStatusTpl' },
+                        { field: 'InstanceStatus', title: '流程状态', width: 90, align: 'center', templet: '#instanceStatusTpl' },
+                        { field: 'AddTime', title: '到达时间', width: 150, align: 'center', templet: function (d) { return fmtTime(d.AddTime); } },
+                        { field: 'AuditTime', title: '处理时间', width: 150, align: 'center', templet: function (d) { return fmtTime(d.AuditTime); } },
+                        { title: '操作', width: 100, align: 'center', toolbar: '#operationTpl', fixed: 'right' }
+                    ]]
+                });
+            }
+
+            var tableIns = renderTable(currentTab);
+
+            // 选项卡切换
+            element.on('tab(taskTab)', function (data) {
+                currentTab = data.index === 0 ? 'todo' : 'done';
+                tableIns = renderTable(currentTab);
+            });
+
+            // 查询
+            $('#btnSearch').on('click', function () {
+                tableIns = renderTable(currentTab);
+            });
+
+            // 重置
+            $('#btnReset').on('click', function () {
+                $('#searchKeyword').val('');
+                tableIns = renderTable(currentTab);
+            });
+
+            // 行工具事件（审批/查看/业务单号链接 均跳转详情）
+            table.on('tool(taskTable)', function (obj) {
+                if (obj.event === 'detail') {
+                    location.href = '/FlowRunTask/Detail?taskCode=' + encodeURIComponent(obj.data.TaskCode);
+                }
+            });
+        });
+    </script>
+}

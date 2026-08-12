@@ -1,0 +1,1180 @@
+﻿@{
+    ViewBag.Title = "节点设置";
+    var listUserJson = Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.listUser);
+    var listDeptJson = Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.listDept);
+}
+
+<div class="nd-root">
+    <!-- 顶部工具栏 -->
+    <div class="nd-toolbar">
+        <div class="nd-toolbar-left">
+            <i class="layui-icon layui-icon-set" style="font-size:20px;color:#1E9FFF;"></i>
+            <span class="nd-toolbar-title">流程节点设计</span>
+            <span class="nd-toolbar-tc">模板编码：<b id="nd-template-code">@ViewBag.TemplateCode</b></span>
+        </div>
+        <div class="nd-toolbar-right">
+            <button class="layui-btn layui-btn-normal layui-btn-sm" id="btn-save"><i class="layui-icon layui-icon-ok"></i> 保存</button>
+            <button class="layui-btn layui-btn-primary layui-btn-sm" id="btn-back"><i class="layui-icon layui-icon-return"></i> 返回</button>
+        </div>
+    </div>
+
+    <div class="nd-container">
+        <!-- 左侧节点面板 -->
+        <div class="nd-palette">
+            <div class="nd-palette-title">节点类型</div>
+            <div class="nd-node-template" data-type="0" draggable="true" style="background:#5FB878;">
+                <i class="layui-icon layui-icon-play"></i><span>开始节点</span>
+            </div>
+            <div class="nd-node-template" data-type="1" draggable="true" style="background:#1E9FFF;">
+                <i class="layui-icon layui-icon-user"></i><span>审批节点</span>
+            </div>
+            <div class="nd-node-template" data-type="3" draggable="true" style="background:#999999;">
+                <i class="layui-icon layui-icon-close"></i><span>结束节点</span>
+            </div>
+            <div class="nd-palette-tip">
+                操作说明：<br>
+                · 拖拽节点到画板<br>
+                · 拖动节点可移动<br>
+                · 节点右侧圆点拖出可连线<br>
+                · 双击节点/连线可编辑<br>
+                · 选中后按 Delete 删除<br>
+                · 右键节点弹出菜单
+            </div>
+        </div>
+
+        <!-- 右侧画板 -->
+        <div class="nd-canvas-wrap" id="nd-canvas-wrap">
+            <div class="nd-canvas" id="nd-canvas">
+                <svg class="nd-svg" id="nd-svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 右键菜单-节点 -->
+<div class="nd-context-menu" id="nd-context-menu">
+    <div class="nd-context-item" data-action="edit"><i class="layui-icon layui-icon-edit"></i> 编辑节点</div>
+    <div class="nd-context-item" data-action="delete"><i class="layui-icon layui-icon-delete"></i> 删除节点</div>
+</div>
+
+<!-- 右键菜单-连线 -->
+<div class="nd-context-menu" id="nd-conn-context-menu">
+    <div class="nd-context-item" data-action="editCond"><i class="layui-icon layui-icon-edit"></i> 编辑条件</div>
+    <div class="nd-context-item" data-action="deleteConn"><i class="layui-icon layui-icon-delete"></i> 删除连线</div>
+</div>
+
+<style>
+    /* 整体布局 */
+    .nd-root {
+        height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+
+    /* 顶部工具栏 */
+    .nd-toolbar {
+        flex: 0 0 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+        border-bottom: 1px solid #e6e6e6;
+        background: #fafafa;
+    }
+
+    .nd-toolbar-left {
+        display: flex;
+        align-items: center;
+    }
+
+    .nd-toolbar-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-left: 6px;
+        color: #333;
+    }
+
+    .nd-toolbar-tc {
+        margin-left: 18px;
+        font-size: 13px;
+        color: #666;
+    }
+
+        .nd-toolbar-tc b {
+            color: #1E9FFF;
+        }
+
+    .nd-toolbar-right {
+        display: flex;
+        align-items: center;
+    }
+
+    /* 容器 */
+    .nd-container {
+        flex: 1 1 auto;
+        display: flex;
+        overflow: hidden;
+    }
+
+    /* 左侧节点面板 */
+    .nd-palette {
+        flex: 0 0 150px;
+        border-right: 1px solid #e6e6e6;
+        padding: 12px 10px;
+        overflow: auto;
+        background: #fff;
+    }
+
+    .nd-palette-title {
+        font-size: 13px;
+        color: #999;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .nd-node-template {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        border-radius: 8px;
+        padding: 10px 8px;
+        margin-bottom: 10px;
+        cursor: grab;
+        font-size: 13px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.15);
+        user-select: none;
+    }
+
+        .nd-node-template i {
+            margin-right: 5px;
+            font-size: 15px;
+        }
+
+        .nd-node-template:active {
+            cursor: grabbing;
+        }
+
+    .nd-palette-tip {
+        margin-top: 16px;
+        font-size: 12px;
+        color: #999;
+        line-height: 1.7;
+        border-top: 1px dashed #e6e6e6;
+        padding-top: 10px;
+    }
+
+    /* 画板 */
+    .nd-canvas-wrap {
+        flex: 1 1 auto;
+        overflow: auto;
+        position: relative;
+        background: #f5f5f5;
+    }
+
+    .nd-canvas {
+        position: relative;
+        width: 2400px;
+        height: 1600px;
+        background-color: #fafafa;
+        background-image: linear-gradient(#e8e8e8 1px, transparent 1px), linear-gradient(90deg, #e8e8e8 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    /* SVG 连线层 */
+    .nd-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+        .nd-svg path.nd-line {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2;
+            cursor: pointer;
+            pointer-events: stroke;
+        }
+
+            .nd-svg path.nd-line.selected {
+                stroke: #1890ff;
+                stroke-width: 3;
+            }
+
+        .nd-svg path.nd-line-temp {
+            fill: none;
+            stroke: #1890ff;
+            stroke-width: 2;
+            stroke-dasharray: 6,5;
+            pointer-events: none;
+        }
+
+    /* 流程节点 */
+    .nd-flow-node {
+        position: absolute;
+        min-width: 130px;
+        min-height: 56px;
+        border-radius: 8px;
+        color: #fff;
+        text-align: center;
+        cursor: move;
+        box-shadow: 0 2px 8px rgba(0,0,0,.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        user-select: none;
+        z-index: 2;
+        padding: 6px 10px;
+    }
+
+        .nd-flow-node.selected {
+            box-shadow: 0 0 0 3px #1890ff, 0 2px 8px rgba(0,0,0,.25);
+        }
+
+        .nd-flow-node .nd-node-icon {
+            font-size: 16px;
+        }
+
+        .nd-flow-node .nd-node-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .nd-flow-node .nd-node-sub {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 2px;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    /* 连接点 */
+    .nd-conn-point {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #fff;
+        border: 2px solid #1890ff;
+        border-radius: 50%;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: crosshair;
+        z-index: 3;
+    }
+
+        .nd-conn-point.left {
+            left: -7px;
+        }
+
+        .nd-conn-point.right {
+            right: -7px;
+        }
+
+        .nd-conn-point:hover {
+            background: #1890ff;
+            transform: translateY(-50%) scale(1.3);
+        }
+    /* 连线时高亮左侧连接点 */
+    .nd-canvas.drawing .nd-conn-point.left {
+        transform: translateY(-50%) scale(1.5);
+        background: #1890ff;
+    }
+
+    /* 连线条件标签 */
+    .nd-conn-label {
+        position: absolute;
+        background: #fff;
+        border: 1px solid #d9d9d9;
+        border-radius: 3px;
+        padding: 2px 8px 2px 8px;
+        font-size: 12px;
+        color: #333;
+        cursor: pointer;
+        z-index: 2;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,.1);
+        display: flex;
+        align-items: center;
+    }
+
+        .nd-conn-label:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+    .nd-conn-label {
+        cursor: grab;
+    }
+
+        .nd-conn-label:active {
+            cursor: grabbing;
+        }
+
+        .nd-conn-label .nd-label-text {
+            display: inline-block;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nd-conn-label .nd-label-edit {
+            margin-left: 6px;
+            font-size: 13px;
+            color: #1890ff;
+            cursor: pointer;
+            display: inline-block;
+            padding: 0 2px;
+        }
+
+            .nd-conn-label .nd-label-edit:hover {
+                color: #ff5722;
+            }
+
+    /* 右键菜单 */
+    .nd-context-menu {
+        position: fixed;
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 4px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.15);
+        padding: 4px 0;
+        display: none;
+        z-index: 9999;
+        min-width: 120px;
+    }
+
+    .nd-context-item {
+        padding: 7px 18px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #333;
+    }
+
+        .nd-context-item:hover {
+            background: #f2f2f2;
+            color: #1890ff;
+        }
+
+        .nd-context-item i {
+            margin-right: 6px;
+        }
+
+    /* 编辑表单 */
+    .nd-edit-form .layui-form-label {
+        width: 90px;
+    }
+
+    .nd-edit-form .layui-input-block {
+        margin-left: 120px;
+    }
+</style>
+
+@section scripts {
+    <!-- xmSelect 多选下拉组件（基于 layui 扩展，自动注册为 layui 模块，CSS 内嵌无需单独引入） -->
+    <script src="https://unpkg.com/xm-select@1.2.4/dist/xm-select.js"></script>
+    <script>
+        layui.use(['layer', 'form', 'xmSelect'], function () {
+            var layer = layui.layer;
+            var form = layui.form;
+            var xmSelect = layui.xmSelect;
+
+            // 人员树数据（部门→人员），部门列表数据
+            var USER_TREE = @Html.Raw(listUserJson);
+            var DEPT_LIST = @Html.Raw(listDeptJson);
+
+            // 生成时间戳字符串：yyyyMMddHHmmssfff
+            function nowStr() {
+                var d = new Date();
+                var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+                var p3 = function (n) { return n < 10 ? '00' + n : (n < 100 ? '0' + n : '' + n); };
+                return d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) +
+                    p2(d.getHours()) + p2(d.getMinutes()) + p2(d.getSeconds()) + p3(d.getMilliseconds());
+            }
+
+            var FlowDesigner = {
+                templateCode: '',
+                nodes: [],
+                connections: [],
+                selectedNodeId: null,
+                selectedConnId: null,
+                nodeCounter: 0,
+                connCounter: 0,
+                drawing: null,   // 正在绘制的连线临时对象
+                layer: layer,
+                form: form,
+
+                typeConfig: {
+                    0: { name: '开始', color: '#5FB878', icon: 'layui-icon-play' },
+                    1: { name: '审批', color: '#1E9FFF', icon: 'layui-icon-user' },
+                    3: { name: '结束', color: '#999999', icon: 'layui-icon-close' }
+                },
+
+                symbolText: function (s) {
+                    return ['=', '≠', '>', '≥', '<', '≤', '包含', '不包含'][s] || '=';
+                },
+
+                // 初始化事件绑定
+                init: function (templateCode) {
+                    this.templateCode = templateCode;
+                    var self = this;
+                    var $canvas = $('#nd-canvas');
+
+                    // 左侧节点拖拽
+                    $('.nd-node-template').on('dragstart', function (e) {
+                        var type = $(this).data('type');
+                        e.originalEvent.dataTransfer.setData('text', type);
+                        e.originalEvent.dataTransfer.effectAllowed = 'copy';
+                    });
+
+                    // 画板接收拖拽
+                    $canvas.on('dragover', function (e) {
+                        e.preventDefault();
+                        e.originalEvent.dataTransfer.dropEffect = 'copy';
+                    });
+                    $canvas.on('drop', function (e) {
+                        e.preventDefault();
+                        var type = parseInt(e.originalEvent.dataTransfer.getData('text'));
+                        if (isNaN(type)) return;
+                        var offset = $canvas.offset();
+                        var x = e.originalEvent.pageX - offset.left - 65;
+                        var y = e.originalEvent.pageY - offset.top - 28;
+                        self.addNode(type, x, y);
+                    });
+
+                    // 节点拖动移动 / 左键松开未拖动则打开编辑
+                    $canvas.on('mousedown', '.nd-flow-node', function (e) {
+                        if ($(e.target).hasClass('nd-conn-point')) return;
+                        if (e.button !== 0) return; // 仅左键
+                        var code = $(this).data('code');
+                        var node = self.nodes.find(function (n) { return n.NodeCode === code; });
+                        if (!node) return;
+                        self.selectNode(code);
+                        var startX = e.pageX, startY = e.pageY;
+                        var origX = node.x, origY = node.y;
+                        var isDragging = false;
+                        $(document).on('mousemove.ndmove', function (ev) {
+                            var dx = ev.pageX - startX, dy = ev.pageY - startY;
+                            if (!isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) { isDragging = true; }
+                            if (isDragging) {
+                                node.x = origX + dx;
+                                node.y = origY + dy;
+                                $('#ndnode-' + code).css({ left: node.x, top: node.y });
+                                self.drawConnections();
+                            }
+                        });
+                        $(document).on('mouseup.ndmove', function () {
+                            $(document).off('mousemove.ndmove mouseup.ndmove');
+                            if (!isDragging) {
+                                // 未拖动 → 左键点击打开编辑
+                                self.editNode(code);
+                            }
+                        });
+                    });
+
+                    // 右侧连接点：开始连线
+                    $canvas.on('mousedown', '.nd-conn-point.right', function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var code = $(this).closest('.nd-flow-node').data('code');
+                        self.startConnect(code, e);
+                    });
+
+                    // 右键节点菜单
+                    $canvas.on('contextmenu', '.nd-flow-node', function (e) {
+                        e.preventDefault();
+                        var code = $(this).data('code');
+                        self.selectNode(code);
+                        $('#nd-context-menu').data('code', code)
+                            .css({ left: e.clientX, top: e.clientY }).show();
+                    });
+
+                    // 连线左键点击直接打开条件编辑
+                    $canvas.on('click', 'path.nd-line', function (e) {
+                        e.stopPropagation();
+                        var code = $(this).attr('data-code');
+                        self.selectConnection(code);
+                        self.editCondition(code);
+                    });
+                    // 连线标签：mousedown 拖拽移动线条 / 松开未拖动则打开编辑（仅左键）
+                    $canvas.on('mousedown', '.nd-conn-label', function (e) {
+                        if (e.button !== 0) return; // 仅左键，右键交给 contextmenu
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var code = $(this).data('code');
+                        var conn = self.connections.find(function (c) { return c.ConditionCode === code; });
+                        if (!conn) return;
+                        self.selectConnection(code);
+                        var startY = e.pageY;
+                        var startOffset = conn.curveOffset || 0;
+                        var isDragging = false;
+                        var $canvasEl = $('#nd-canvas');
+                        var canvasOffset = $canvasEl.offset();
+                        // 计算连线中点 Y（画板坐标）
+                        var sp = self.getNodePoint(conn.SourceNodeCode, 'right');
+                        var tp = self.getNodePoint(conn.TargetNodeCode, 'left');
+                        var midY = (sp.y + tp.y) / 2;
+                        $(document).on('mousemove.ndlabeldrag', function (ev) {
+                            var dy = ev.pageY - startY;
+                            if (!isDragging && Math.abs(dy) > 5) { isDragging = true; }
+                            if (isDragging) {
+                                // curveOffset = 鼠标当前Y（画板坐标） - 中点Y
+                                var mouseCanvasY = ev.pageY - canvasOffset.top;
+                                conn.curveOffset = mouseCanvasY - midY;
+                                self.drawConnections();
+                            }
+                        });
+                        $(document).on('mouseup.ndlabeldrag', function () {
+                            $(document).off('mousemove.ndlabeldrag mouseup.ndlabeldrag');
+                            if (!isDragging) {
+                                // 未拖动 → 视为点击，打开条件编辑
+                                self.editCondition(code);
+                            }
+                        });
+                    });
+                    // 连线标签上的编辑图标
+                    $canvas.on('click', '.nd-label-edit', function (e) {
+                        e.stopPropagation();
+                        var code = $(this).data('code');
+                        self.selectConnection(code);
+                        self.editCondition(code);
+                    });
+
+                    // 右键连线（SVG path）弹出连线菜单
+                    $canvas.on('contextmenu', 'path.nd-line', function (e) {
+                        e.preventDefault();
+                        var code = $(this).attr('data-code');
+                        self.selectConnection(code);
+                        $('#nd-conn-context-menu').data('code', code)
+                            .css({ left: e.clientX, top: e.clientY }).show();
+                    });
+                    // 右键连线标签也弹出连线菜单
+                    $canvas.on('contextmenu', '.nd-conn-label', function (e) {
+                        e.preventDefault();
+                        var code = $(this).data('code');
+                        self.selectConnection(code);
+                        $('#nd-conn-context-menu').data('code', code)
+                            .css({ left: e.clientX, top: e.clientY }).show();
+                    });
+
+                    // 画板空白处取消选中
+                    $canvas.on('click', function (e) {
+                        if (e.target === this || $(e.target).hasClass('nd-svg')) {
+                            self.selectNode(null);
+                            self.selectConnection(null);
+                        }
+                    });
+
+                    // 点击其它位置隐藏所有右键菜单
+                    $(document).on('click', function () { $('#nd-context-menu').hide(); $('#nd-conn-context-menu').hide(); });
+
+                    // 节点右键菜单项
+                    $('#nd-context-menu').on('click', '.nd-context-item', function (e) {
+                        e.stopPropagation();
+                        var action = $(this).data('action');
+                        var code = $('#nd-context-menu').data('code');
+                        $('#nd-context-menu').hide();
+                        if (action === 'edit') { self.editNode(code); }
+                        else if (action === 'delete') { self.removeNode(code); }
+                    });
+
+                    // 连线右键菜单项
+                    $('#nd-conn-context-menu').on('click', '.nd-context-item', function (e) {
+                        e.stopPropagation();
+                        var action = $(this).data('action');
+                        var code = $('#nd-conn-context-menu').data('code');
+                        $('#nd-conn-context-menu').hide();
+                        if (action === 'editCond') { self.editCondition(code); }
+                        else if (action === 'deleteConn') { self.removeConnection(code); }
+                    });
+
+                    // 键盘 Delete 删除
+                    $(document).on('keydown', function (e) {
+                        var tag = (e.target.tagName || '').toUpperCase();
+                        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+                        if (e.keyCode === 46) {
+                            if (self.selectedNodeId) { self.removeNode(self.selectedNodeId); }
+                            else if (self.selectedConnId) { self.removeConnection(self.selectedConnId); }
+                        }
+                    });
+
+                    // 保存 / 返回
+                    $('#btn-save').on('click', function () { self.saveData(); });
+                    $('#btn-back').on('click', function () {
+                        window.location.href = '@Url.Action("Index", "FlowSetTemplate")';
+                    });
+                },
+
+                // 新增节点
+                addNode: function (type, x, y) {
+                    // 不允许添加分支网关 type=2
+                    if (type === 2) return;
+                    var cfg = this.typeConfig[type] || this.typeConfig[1];
+                    var node = {
+                        NodeCode: 'NODE' + nowStr() + '_' + (++this.nodeCounter),
+                        TemplateCode: this.templateCode,
+                        NodeName: cfg.name + '节点',
+                        NodeType: type,
+                        NodeSort: this.nodes.length + 1,
+                        AuditType: 0,
+                        AuditUserNos: '',
+                        IsCounterSign: 0,
+                        Remark: '',
+                        x: x, y: y
+                    };
+                    this.nodes.push(node);
+                    this.renderNodes();
+                    this.drawConnections();
+                    this.selectNode(node.NodeCode);
+                },
+
+                // 删除节点
+                removeNode: function (code) {
+                    var idx = this.nodes.findIndex(function (n) { return n.NodeCode === code; });
+                    if (idx < 0) return;
+                    var self = this;
+                    this.layer.confirm('确定删除该节点吗？相关连线也会一并删除。', function (lidx) {
+                        self.nodes.splice(idx, 1);
+                        self.connections = self.connections.filter(function (c) {
+                            return c.SourceNodeCode !== code && c.TargetNodeCode !== code;
+                        });
+                        self.selectedNodeId = null;
+                        self.renderNodes();
+                        self.drawConnections();
+                        self.layer.close(lidx);
+                    });
+                },
+
+                // 删除连线
+                removeConnection: function (code) {
+                    var idx = this.connections.findIndex(function (c) { return c.ConditionCode === code; });
+                    if (idx < 0) return;
+                    var self = this;
+                    this.layer.confirm('确定删除该连线吗？', function (lidx) {
+                        self.connections.splice(idx, 1);
+                        self.selectedConnId = null;
+                        self.drawConnections();
+                        self.layer.close(lidx);
+                    });
+                },
+
+                // 将审批人编码解析为显示名称（人员→姓名，部门→部门名，直属上级→固定文案）
+                auditDisplayText: function (node) {
+                    if (!node.AuditUserNos) return node.AuditType === 3 ? '提单人直属上级' : node.AuditType === 5 ? '提单人' : '未设置审批人';
+                    var codes = node.AuditUserNos.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+                    if (codes.length === 0) return node.AuditType === 3 ? '提单人直属上级' : node.AuditType === 5 ? '提单人' : '未设置审批人';
+                    var names = [];
+                    if (node.AuditType === 0) {
+                        // 指定人员：从 USER_TREE 中查找姓名
+                        if (typeof USER_TREE !== 'undefined' && USER_TREE) {
+                            USER_TREE.forEach(function (dept) {
+                                if (dept.children && dept.children.length) {
+                                    dept.children.forEach(function (u) {
+                                        if (codes.indexOf(u.value) >= 0) { names.push(u.name); }
+                                    });
+                                }
+                            });
+                        }
+                    } else if (node.AuditType === 1 || node.AuditType === 4) {
+                        // 指定部门/部门负责人：从 DEPT_LIST 中查找部门名
+                        if (typeof DEPT_LIST !== 'undefined' && DEPT_LIST) {
+                            DEPT_LIST.forEach(function (d) {
+                                if (codes.indexOf(d.value) >= 0) { names.push(d.name); }
+                            });
+                        }
+                    } else if (node.AuditType === 3) {
+                        return '提单人直属上级';
+                    }
+                    else if (node.AuditType === 5) {
+                        return '提单人';
+                    }
+                    return names.length > 0 ? ('审批人: ' + names.join('、')) : ('审批人: ' + node.AuditUserNos);
+                },
+
+                // 渲染所有节点
+                renderNodes: function () {
+                    var $canvas = $('#nd-canvas');
+                    $canvas.find('.nd-flow-node').remove();
+                    var self = this;
+                    this.nodes.forEach(function (n) {
+                        var cfg = self.typeConfig[n.NodeType] || self.typeConfig[1];
+                        var sub = '';
+                        if (n.NodeType === 1) {
+                            sub = self.auditDisplayText(n);
+                        } else if (n.NodeType === 0) {
+                            sub = '流程开始';
+                        } else if (n.NodeType === 3) {
+                            sub = '流程结束';
+                        }
+                        var html =
+                            '<div class="nd-flow-node" id="ndnode-' + n.NodeCode + '" data-code="' + n.NodeCode +
+                            '" style="left:' + n.x + 'px;top:' + n.y + 'px;background:' + cfg.color + ';">' +
+                            '<div class="nd-node-icon"><i class="layui-icon ' + cfg.icon + '"></i></div>' +
+                            '<div class="nd-node-title">' + (n.NodeName || cfg.name) + '</div>' +
+                            (sub ? '<div class="nd-node-sub">' + sub + '</div>' : '') +
+                            '<div class="nd-conn-point left" data-side="left"></div>' +
+                            '<div class="nd-conn-point right" data-side="right"></div>' +
+                            '</div>';
+                        $canvas.append(html);
+                    });
+                    if (this.selectedNodeId) { $('#ndnode-' + this.selectedNodeId).addClass('selected'); }
+                },
+
+                // 获取节点连接点坐标
+                getNodePoint: function (nodeId, side) {
+                    var node = this.nodes.find(function (n) { return n.NodeCode === nodeId; });
+                    if (!node) return null;
+                    var $el = $('#ndnode-' + nodeId);
+                    var w = $el.length ? $el.outerWidth() : 130;
+                    var h = $el.length ? $el.outerHeight() : 56;
+                    if (side === 'right') return { x: node.x + w, y: node.y + h / 2 };
+                    return { x: node.x, y: node.y + h / 2 };
+                },
+
+                // 贝塞尔曲线路径（支持 curveOffset 偏移使线条可拖拽弯曲）
+                bezierPath: function (x1, y1, x2, y2, curveOffset) {
+                    var dx = Math.abs(x2 - x1);
+                    var offset = Math.max(40, dx / 2);
+                    var cy = curveOffset || 0; // 纵向偏移量，0 为默认直线弯曲
+                    return 'M ' + x1 + ' ' + y1 +
+                        ' C ' + (x1 + offset) + ' ' + (y1 + cy) + ', ' +
+                        (x2 - offset) + ' ' + (y2 + cy) + ', ' + x2 + ' ' + y2;
+                },
+
+                // 重绘所有连线
+                drawConnections: function () {
+                    var $svg = $('#nd-svg');
+                    $svg.empty();
+                    var defs =
+                        '<defs>' +
+                        '<marker id="nd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
+                        '<path d="M0,0 L10,5 L0,10 z" fill="#999"></path></marker>' +
+                        '<marker id="nd-arrow-sel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
+                        '<path d="M0,0 L10,5 L0,10 z" fill="#1890ff"></path></marker>' +
+                        '</defs>';
+                    $svg.append(defs);
+
+                    $('#nd-canvas .nd-conn-label').remove();
+                    var self = this;
+                    var svgEl = $svg[0];
+
+                    this.connections.forEach(function (c) {
+                        var sp = self.getNodePoint(c.SourceNodeCode, 'right');
+                        var tp = self.getNodePoint(c.TargetNodeCode, 'left');
+                        if (!sp || !tp) return;
+                        var d = self.bezierPath(sp.x, sp.y, tp.x, tp.y, c.curveOffset || 0);
+                        var selected = (c.ConditionCode === self.selectedConnId);
+                        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', d);
+                        path.setAttribute('class', 'nd-line' + (selected ? ' selected' : ''));
+                        path.setAttribute('marker-end', selected ? 'url(#nd-arrow-sel)' : 'url(#nd-arrow)');
+                        path.setAttribute('data-code', c.ConditionCode);
+                        svgEl.appendChild(path);
+
+                        // 条件标签（带编辑按钮），位置考虑曲线偏移
+                        var midX = (sp.x + tp.x) / 2;
+                        var midY = (sp.y + tp.y) / 2 + (c.curveOffset || 0) * 0.75;
+                        var label = c.ConditionName ||
+                            (c.BizField ? (c.BizField + ' ' + self.symbolText(c.Symbol) + ' ' + (c.CompareValue || '')) : '');
+                        var labelText = label || '点击编辑条件';
+                        var $label = $(
+                            '<div class="nd-conn-label" data-code="' + c.ConditionCode +
+                            '" style="left:' + (midX - 60) + 'px;top:' + (midY - 14) + 'px;">' +
+                            '<span class="nd-label-text">' + labelText + '</span>' +
+                            '<i class="layui-icon layui-icon-edit nd-label-edit" data-code="' + c.ConditionCode + '" title="编辑条件"></i>' +
+                            '</div>');
+                        $('#nd-canvas').append($label);
+                    });
+
+                    // 临时连线
+                    if (this.drawing) {
+                        var td = this.bezierPath(this.drawing.startX, this.drawing.startY, this.drawing.curX, this.drawing.curY);
+                        var tpath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        tpath.setAttribute('d', td);
+                        tpath.setAttribute('class', 'nd-line-temp');
+                        svgEl.appendChild(tpath);
+                    }
+                },
+
+                // 开始连线
+                startConnect: function (code, e) {
+                    var self = this;
+                    var sp = this.getNodePoint(code, 'right');
+                    var $canvas = $('#nd-canvas');
+                    var offset = $canvas.offset();
+                    this.drawing = { fromNode: code, startX: sp.x, startY: sp.y, curX: sp.x, curY: sp.y };
+                    $canvas.addClass('drawing');
+                    this.drawConnections();
+                    $(document).on('mousemove.ndconn', function (ev) {
+                        self.drawing.curX = ev.pageX - offset.left;
+                        self.drawing.curY = ev.pageY - offset.top;
+                        self.drawConnections();
+                    });
+                    $(document).on('mouseup.ndconn', function (ev) {
+                        $(document).off('mousemove.ndconn mouseup.ndconn');
+                        $canvas.removeClass('drawing');
+                        var el = document.elementFromPoint(ev.clientX, ev.clientY);
+                        self.endConnect(code, $(el));
+                        self.drawing = null;
+                        self.drawConnections();
+                    });
+                },
+
+                // 结束连线
+                endConnect: function (fromCode, $target) {
+                    if (!$target || !$target.length) return;
+                    if (!($target.hasClass('nd-conn-point') && $target.hasClass('left'))) return;
+                    var toCode = $target.closest('.nd-flow-node').data('code');
+                    if (!toCode || toCode === fromCode) return;
+                    var exists = this.connections.find(function (c) {
+                        return c.SourceNodeCode === fromCode && c.TargetNodeCode === toCode;
+                    });
+                    if (exists) { this.layer.msg('已存在相同连线', { icon: 0 }); return; }
+                    var conn = {
+                        ConditionCode: 'COND' + nowStr() + '_' + (++this.connCounter),
+                        TemplateCode: this.templateCode,
+                        SourceNodeCode: fromCode,
+                        TargetNodeCode: toCode,
+                        ConditionName: '',
+                        BizField: '',
+                        Symbol: 0,
+                        CompareValue: '',
+                        LogicType: 0,
+                        Priority: this.connections.length + 1
+                    };
+                    this.connections.push(conn);
+                    this.drawConnections();
+                    // 新建连线后立即弹出条件编辑
+                    var self2 = this;
+                    setTimeout(function () { self2.editCondition(conn.ConditionCode); }, 200);
+                },
+
+                // 选中节点
+                selectNode: function (code) {
+                    this.selectedNodeId = code;
+                    this.selectedConnId = null;
+                    $('.nd-flow-node').removeClass('selected');
+                    if (code) { $('#ndnode-' + code).addClass('selected'); }
+                    this.drawConnections();
+                },
+
+                // 选中连线
+                selectConnection: function (code) {
+                    this.selectedConnId = code;
+                    this.selectedNodeId = null;
+                    $('.nd-flow-node').removeClass('selected');
+                    this.drawConnections();
+                },
+
+                // 编辑节点
+                editNode: function (code) {
+                    var node = this.nodes.find(function (n) { return n.NodeCode === code; });
+                    if (!node) return;
+                    var isApproval = (node.NodeType === 1);
+                    var filterName = 'editNode_' + code.replace(/[^a-zA-Z0-9]/g, '_');
+
+                    // 构建 xmSelect 人员数据（部门→人员树形结构，支持逗号分隔多值预选）
+                    var selectedUsers = (node.AuditUserNos || '').split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+                    var xmUserData = [];
+                    if (typeof USER_TREE !== 'undefined' && USER_TREE) {
+                        USER_TREE.forEach(function (dept) {
+                            var deptNode = { name: dept.name, value: dept.value, children: [] };
+                            if (dept.children && dept.children.length) {
+                                dept.children.forEach(function (u) {
+                                    deptNode.children.push({
+                                        name: u.name,
+                                        value: u.value,
+                                        selected: selectedUsers.indexOf(u.value) >= 0
+                                    });
+                                });
+                            }
+                            xmUserData.push(deptNode);
+                        });
+                    }
+
+                    // 构建 xmSelect 部门数据（扁平列表，支持逗号分隔多值预选）
+                    var selectedDepts = (node.AuditUserNos || '').split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+                    var xmDeptData = [];
+                    if (typeof DEPT_LIST !== 'undefined' && DEPT_LIST) {
+                        DEPT_LIST.forEach(function (d) {
+                            xmDeptData.push({
+                                name: d.name,
+                                value: d.value,
+                                selected: selectedDepts.indexOf(d.value) >= 0
+                            });
+                        });
+                    }
+
+                    var html = '<form class="layui-form nd-edit-form" lay-filter="' + filterName + '" style="padding:15px 20px;">' +
+                        '<div class="layui-form-item"><label class="layui-form-label">节点名称</label>' +
+                        '<div class="layui-input-block"><input type="text" name="ef-name" id="ef-name" class="layui-input" value="' + (node.NodeName || '') + '"></div></div>';
+                    if (isApproval) {
+                        html += '<div class="layui-form-item"><label class="layui-form-label">审批类型</label>' +
+                            '<div class="layui-input-block"><select name="ef-audittype" id="ef-audittype" lay-filter="ef-audittype" lay-search="">' +
+                            '<option value="0"' + (node.AuditType == 0 ? ' selected' : '') + '>指定人员</option>' +
+                            '<option value="1"' + (node.AuditType == 1 ? ' selected' : '') + '>指定部门</option>' +
+                            '<option value="4"' + (node.AuditType == 4 ? ' selected' : '') + '>部门负责人</option>' +
+                            '<option value="3"' + (node.AuditType == 3 ? ' selected' : '') + '>提单人直属上级</option>' +
+                            '<option value="5"' + (node.AuditType == 5 ? ' selected' : '') + '>提单人</option>' +
+                            '</select></div></div>' +
+                            // 人员多选下拉（xmSelect 渲染，审批类型=0 时显示）
+                            '<div class="layui-form-item ef-target-wrap" id="ef-user-wrap"><label class="layui-form-label">审批人</label>' +
+                            '<div class="layui-input-block"><div id="ef-audituser"></div></div></div>' +
+                            // 部门多选下拉（xmSelect 渲染，审批类型=1或4 时显示）
+                            '<div class="layui-form-item ef-target-wrap" id="ef-dept-wrap"><label class="layui-form-label">审批部门</label>' +
+                            '<div class="layui-input-block"><div id="ef-auditdept"></div></div></div>' +
+                            // 提单人直属上级提示（审批类型=3或5 时显示）
+                            '<div class="layui-form-item ef-target-wrap" id="ef-tip-wrap"><label class="layui-form-label">审批人</label>' +
+                            '<div class="layui-input-block"><div class="layui-form-mid layui-word-aux" style="padding-top:10px;">系统自动获取，无需手动选择</div></div></div>' +
+                            '<div class="layui-form-item"><label class="layui-form-label">会签/或签</label>' +
+                            '<div class="layui-input-block"><select name="ef-countersign" id="ef-countersign" lay-search="">' +
+                            '<option value="0"' + (node.IsCounterSign == 0 ? ' selected' : '') + '>或签(一人通过)</option>' +
+                            '<option value="1"' + (node.IsCounterSign == 1 ? ' selected' : '') + '>会签(全部审批)</option>' +
+                            '</select></div></div>';
+                    }
+                    html += '</form>';
+
+                    // 根据审批类型显示/隐藏对应下拉区域
+                    function updateTargetVisibility(auditType) {
+                        var $userWrap = $('#ef-user-wrap');
+                        var $deptWrap = $('#ef-dept-wrap');
+                        var $tipWrap = $('#ef-tip-wrap');
+                        $userWrap.hide();
+                        $deptWrap.hide();
+                        $tipWrap.hide();
+                        if (auditType === 0) { $userWrap.show(); }
+                        else if (auditType === 1 || auditType === 4) { $deptWrap.show(); }
+                        else if (auditType === 3 || auditType === 5) { $tipWrap.show(); }
+                    }
+
+                    var self = this;
+                    var xmUserInst = null; // xmSelect 实例（人员多选）
+                    var xmDeptInst = null; // xmSelect 实例（部门多选）
+                    this.layer.open({
+                        type: 1, title: '编辑节点',
+                        area: ['520px', isApproval ? '560px' : '240px'],
+                        content: html, btn: ['确定', '取消'],
+                        success: function (layero) {
+                            self.form.render(null, filterName);
+                            // 渲染人员多选下拉（xmSelect 树形 + 搜索 + 工具栏）
+                            var $userEl = layero.find('#ef-audituser');
+                            if (isApproval && $userEl.length && typeof xmSelect !== 'undefined') {
+                                xmUserInst = xmSelect.render({
+                                    el: $userEl[0],
+                                    name: 'ef-audituser',
+                                    multiple: true,
+                                    filterable: true,
+                                    autoRow: true,
+                                    height: 'auto',
+                                    toolbar: { show: true, list: ['ALL', 'CLEAR', 'REVERSE'] },
+                                    tree: { show: true, showFolderIcon: true, showLine: true, expandedKeys: true },
+                                    data: xmUserData
+                                });
+                            }
+                            // 渲染部门多选下拉（xmSelect 扁平列表 + 搜索 + 工具栏）
+                            var $deptEl = layero.find('#ef-auditdept');
+                            if (isApproval && $deptEl.length && typeof xmSelect !== 'undefined') {
+                                xmDeptInst = xmSelect.render({
+                                    el: $deptEl[0],
+                                    name: 'ef-auditdept',
+                                    multiple: true,
+                                    filterable: true,
+                                    autoRow: true,
+                                    height: 'auto',
+                                    toolbar: { show: true, list: ['ALL', 'CLEAR', 'REVERSE'] },
+                                    data: xmDeptData
+                                });
+                            }
+                            // 初始化显示状态
+                            var at = parseInt(layero.find('#ef-audittype').val()) || 0;
+                            updateTargetVisibility(at);
+                            // 监听审批类型变化
+                            self.form.on('select(ef-audittype)', function (data) {
+                                updateTargetVisibility(parseInt(data.value) || 0);
+                            });
+                        },
+                        yes: function (idx, layero) {
+                            var name = layero.find('#ef-name').val();
+                            if (name) { node.NodeName = name; }
+                            if (isApproval) {
+                                node.AuditType = parseInt(layero.find('#ef-audittype').val()) || 0;
+                                // 根据审批类型读取对应下拉的值
+                                if (node.AuditType === 0) {
+                                    // 人员多选：从 xmSelect 实例获取选中值（逗号分隔字符串）
+                                    node.AuditUserNos = xmUserInst ? xmUserInst.getValue('valueStr') : '';
+                                } else if (node.AuditType === 1 || node.AuditType === 4) {
+                                    // 部门多选：从 xmSelect 实例获取选中值（逗号分隔字符串）
+                                    node.AuditUserNos = xmDeptInst ? xmDeptInst.getValue('valueStr') : '';
+                                } else {
+                                    node.AuditUserNos = ''; // 提单人直属上级、提单人
+                                }
+                                node.IsCounterSign = parseInt(layero.find('#ef-countersign').val()) || 0;
+                            }
+                            self.renderNodes();
+                            self.drawConnections();
+                            self.layer.close(idx);
+                        }
+                    });
+                },
+
+                // 编辑条件
+                editCondition: function (code) {
+                    var conn = this.connections.find(function (c) { return c.ConditionCode === code; });
+                    if (!conn) return;
+                    var symbols = ['等于', '不等于', '大于', '大于等于', '小于', '小于等于', '包含', '不包含'];
+                    var opts = symbols.map(function (t, i) {
+                        return '<option value="' + i + '"' + (conn.Symbol == i ? ' selected' : '') + '>' + t + '</option>';
+                    }).join('');
+                    var filterName = 'editCond_' + code.replace(/[^a-zA-Z0-9]/g, '_');
+                    var html = '<form class="layui-form nd-edit-form" lay-filter="' + filterName + '" style="padding:15px 20px;">' +
+                        '<div class="layui-form-item"><label class="layui-form-label">条件名称</label>' +
+                        '<div class="layui-input-block"><input type="text" name="cf-name" id="cf-name" class="layui-input" value="' + (conn.ConditionName || '') + '"></div></div>' +
+                        '<div class="layui-form-item"><label class="layui-form-label">业务字段</label>' +
+                        '<div class="layui-input-block"><input type="text" name="cf-bizfield" id="cf-bizfield" class="layui-input" placeholder="如:Amount" value="' + (conn.BizField || '') + '"></div></div>' +
+                        '<div class="layui-form-item"><label class="layui-form-label">比较符号</label>' +
+                        '<div class="layui-input-block"><select name="cf-symbol" id="cf-symbol" lay-search="">' + opts + '</select></div></div>' +
+                        '<div class="layui-form-item"><label class="layui-form-label">比较值</label>' +
+                        '<div class="layui-input-block"><input type="text" name="cf-comparevalue" id="cf-comparevalue" class="layui-input" value="' + (conn.CompareValue || '') + '"></div></div>' +
+                        '</form>';
+                    var self = this;
+                    this.layer.open({
+                        type: 1, title: '编辑条件', area: ['520px', '380px'],
+                        content: html, btn: ['确定', '取消'],
+                        success: function (layero) {
+                            self.form.render(null, filterName);
+                        },
+                        yes: function (idx, layero) {
+                            conn.ConditionName = layero.find('#cf-name').val() || '';
+                            conn.BizField = layero.find('#cf-bizfield').val() || '';
+                            conn.Symbol = parseInt(layero.find('#cf-symbol').val()) || 0;
+                            conn.CompareValue = layero.find('#cf-comparevalue').val() || '';
+                            self.drawConnections();
+                            self.layer.close(idx);
+                        }
+                    });
+                },
+
+                // 加载数据
+                loadData: function () {
+                    var self = this;
+                    var loadIdx = this.layer.load(1);
+                    $.when(
+                        $.get('/FlowSetNode/GetNodes', { templateCode: this.templateCode }),
+                        $.get('/FlowSetNode/GetConditions', { templateCode: this.templateCode })
+                    ).done(function (nodesRes, condsRes) {
+                        self.layer.close(loadIdx);
+                        var nodesData = nodesRes[0] || [];
+                        var condsData = condsRes[0] || [];
+                        self.nodes = [];
+                        nodesData.forEach(function (n, i) {
+                            var pos = { x: 80 + i * 220, y: 240 };
+                            if (n.Remark) {
+                                try {
+                                    var p = JSON.parse(n.Remark);
+                                    if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+                                        pos = { x: p.x, y: p.y };
+                                    }
+                                } catch (e) { }
+                            }
+                            n.x = pos.x; n.y = pos.y;
+                            n.AuditType = (n.AuditType == null ? 0 : Number(n.AuditType));
+                            n.IsCounterSign = (n.IsCounterSign == null ? 0 : Number(n.IsCounterSign));
+                            self.nodes.push(n);
+                        });
+                        self.connections = [];
+                        condsData.forEach(function (c) {
+                            c.Symbol = (c.Symbol == null ? 0 : Number(c.Symbol));
+                            c.LogicType = (c.LogicType == null ? 0 : Number(c.LogicType));
+                            c.Priority = (c.Priority == null ? 0 : Number(c.Priority));
+                            c.curveOffset = 0; // 初始化曲线偏移（客户端属性）
+                            self.connections.push(c);
+                        });
+                        self.renderNodes();
+                        self.drawConnections();
+                    }).fail(function () {
+                        self.layer.close(loadIdx);
+                        self.layer.msg('加载数据失败', { icon: 2 });
+                    });
+                },
+
+                // 保存数据
+                saveData: function () {
+                    var self = this;
+                    var payload = this.nodes.map(function (n, i) {
+                        return {
+                            NodeCode: n.NodeCode,
+                            TemplateCode: self.templateCode,
+                            NodeName: n.NodeName,
+                            NodeType: n.NodeType,
+                            NodeSort: i + 1,
+                            AuditType: n.AuditType,
+                            AuditUserNos: n.AuditUserNos || '',
+                            IsCounterSign: n.IsCounterSign,
+                            Remark: JSON.stringify({ x: n.x, y: n.y })
+                        };
+                    });
+                    var condPayload = this.connections.map(function (c, i) {
+                        return {
+                            ConditionCode: c.ConditionCode,
+                            TemplateCode: self.templateCode,
+                            SourceNodeCode: c.SourceNodeCode,
+                            TargetNodeCode: c.TargetNodeCode,
+                            ConditionName: c.ConditionName || '',
+                            BizField: c.BizField || '',
+                            Symbol: c.Symbol,
+                            CompareValue: c.CompareValue || '',
+                            LogicType: c.LogicType,
+                            Priority: i + 1
+                        };
+                    });
+                    var loadIdx = this.layer.load(1);
+                    $.ajax({
+                        url: '/FlowSetNode/SaveDesign',
+                        type: 'POST',
+                        data: {
+                            templateCode: self.templateCode,
+                            nodes: JSON.stringify(payload),
+                            conditions: JSON.stringify(condPayload)
+                        },
+                        dataType: 'json',
+                        success: function (res) {
+                            self.layer.close(loadIdx);
+                            if (res.code === 0) {
+                                // 切换为新版本模板编码（保存已生成新版本，旧模板被禁用）
+                                if (res.data && res.data.newTemplateCode) {
+                                    self.templateCode = res.data.newTemplateCode;
+                                    $('#nd-template-code').text(res.data.newTemplateCode);
+                                    // 把当前前端内存中的节点/条件的 TemplateCode 也更新为新编码
+                                    self.nodes.forEach(function (n) { n.TemplateCode = res.data.newTemplateCode; });
+                                    self.connections.forEach(function (c) { c.TemplateCode = res.data.newTemplateCode; });
+                                }
+                                self.layer.msg('保存成功（已生成新版本）', { icon: 1, time: 1800 }, function () {
+                                    self.loadData();
+                                });
+                            } else {
+                                self.layer.msg(res.msg || '保存失败', { icon: 2 });
+                            }
+                        },
+                        error: function () {
+                            self.layer.close(loadIdx);
+                            self.layer.msg('保存请求失败', { icon: 2 });
+                        }
+                    });
+                }
+            };
+
+            // 启动
+            FlowDesigner.init($('#nd-template-code').text());
+            FlowDesigner.loadData();
+        });
+    </script>
+}

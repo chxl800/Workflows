@@ -1,0 +1,148 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿@{
+    ViewBag.Title = "流程类型管理";
+}
+
+<div class="content-card" style="padding: 20px;">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>流程类型管理</legend>
+    </fieldset>
+
+    <!-- 查询区域 -->
+    <div class="layui-form" style="margin-bottom: 15px;">
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width: 80px;">关键字</label>
+            <div class="layui-input-inline" style="width: 260px;">
+                <input type="text" name="keyword" id="searchKeyword" placeholder="流程名称 / 编码" autocomplete="off" class="layui-input" />
+            </div>
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" id="btnSearch">
+                <i class="layui-icon layui-icon-search"></i> 查询
+            </button>
+            <button type="button" class="layui-btn layui-btn-primary" id="btnReset">重置</button>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div style="margin-bottom: 15px;">
+        <a href="/FlowSetTemplate/Form" class="layui-btn layui-btn-normal">
+            <i class="layui-icon layui-icon-add-1"></i> 新建流程类型
+        </a>
+    </div>
+
+    <table id="templateTable" lay-filter="templateTable"></table>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="operationTpl">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="node">节点设置</a>
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del">删除</a>
+</script>
+
+<!-- 是否启用列模板 -->
+<script type="text/html" id="isEnableTpl">
+    {{# if(d.IsEnable === 1){ }}
+    <span class="layui-badge layui-bg-green">启用</span>
+    {{# } else { }}
+    <span class="layui-badge">禁用</span>
+    {{# } }}
+</script>
+
+@section scripts {
+    <script>
+        layui.use(['table', 'layer'], function () {
+            var table = layui.table;
+            var layer = layui.layer;
+            var $ = layui.$;
+
+            // 渲染表格
+            var tableIns = table.render({
+                elem: '#templateTable',
+                url: '/FlowSetTemplate/GetList',
+                method: 'get',
+                where: {
+                    keyword: '',
+                    isEnable: ''
+                },
+                page: true,
+                limit: 10,
+                limits: [10, 20, 50, 100],
+                cols: [[
+                    { field: 'TemplateCode', title: '编码', width: 250 },
+                    { field: 'TemplateName', title: '名称', width: 180 },
+                    { field: 'BizTableName', title: '业务表名', width: 160 },
+                    { field: 'BizOrderField', title: '业务单号字段', width: 140 },
+                    { field: 'IsEnable', title: '状态', width: 100, align: 'center', templet: '#isEnableTpl' },
+                    { field: 'TemplateVersion', title: '版本号', width: 90, align: 'center' },
+                    { field: 'AddTime', title: '创建时间', width: 170, templet: function (d) {
+                        if (!d.AddTime) return '';
+                        var s = d.AddTime;
+                        if (typeof s === 'string' && s.indexOf('/Date(') >= 0) {
+                            var m = s.match(/\/Date\((\d+)\)\//);
+                            if (m) {
+                                var dt = new Date(parseInt(m[1]));
+                                var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+                                return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate()) + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes()) + ':' + p(dt.getSeconds());
+                            }
+                        }
+                        return s;
+                    } },
+                    { title: '操作', width: 230, align: 'center', toolbar: '#operationTpl', fixed: 'right' }
+                ]]
+            });
+
+            // 查询
+            $('#btnSearch').on('click', function () {
+                tableIns.reload({
+                    page: { curr: 1 },
+                    where: {
+                        keyword: $('#searchKeyword').val()
+                    }
+                });
+            });
+
+            // 重置
+            $('#btnReset').on('click', function () {
+                $('#searchKeyword').val('');
+                tableIns.reload({
+                    page: { curr: 1 },
+                    where: {
+                        keyword: ''
+                    }
+                });
+            });
+
+            // 监听行工具事件
+            table.on('tool(templateTable)', function (obj) {
+                var data = obj.data;
+                if (obj.event === 'edit') {
+                    location.href = '/FlowSetTemplate/Form?id=' + data.Id;
+                } else if (obj.event === 'node') {
+                    location.href = '/FlowSetNode/NodeDesign?templateCode=' + encodeURIComponent(data.TemplateCode);
+                } else if (obj.event === 'del') {
+                    layer.confirm('确定要删除流程类型【' + data.TemplateName + '】吗？', function (index) {
+                        layer.close(index);
+                        $.ajax({
+                            url: '/FlowSetTemplate/Delete',
+                            type: 'POST',
+                            data: { id: data.Id },
+                            success: function (res) {
+                                if (res.Code === 200) {
+                                    layer.msg(res.Message, { icon: 1, time: 1500 }, function () {
+                                        obj.del();
+                                    });
+                                } else {
+                                    layer.msg(res.Message, { icon: 2 });
+                                }
+                            },
+                            error: function () {
+                                layer.msg('请求失败', { icon: 2 });
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+}
